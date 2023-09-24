@@ -1,94 +1,74 @@
 const express = require("express");
 const router = express.Router();
-const Chat = require("../models/Chat"); // Import your Chat model here
+const Chat = require("../models/Chat");
 const TOKEN_SECRET = "enclave";
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
-const mongoose = require('mongoose');
-const multer = require('multer');
+const mongoose = require("mongoose");
+const formidable = require("formidable");
+const fs = require("fs");
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    // cb(null, "../public/images");
-    cb(null, './uploads/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now();
-    cb(null, uniqueSuffix + file.originalname);
-  },
-});
-
-const upload = multer({ storage: storage });
-
-//Upload Room Image
-router.post("/uploadRoomImage", upload.single("image"), async (req, res) => {
-
-  try {
-    const roomid = req.body.roomid; 
-    const imageFile = req.file; 
-
-    if (!roomid || !imageFile) {
-      return res.status(400).json({ error: "Invalid request" });
-    }
-
-    const room = await Chat.findById(roomid);
-
-    if (!room) {
-      return res.status(404).json({ error: "Room not found" });
-    }
-
-    room.image = imageFile.filename;
-
-    await room.save();
-
-    res.status(200).json({ msg: "Successfully uploaded room image!" });
-  } catch (error) {
-    console.error("Error uploading room image:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Route to create a new chat room
 router.post("/create", async (req, res) => {
   try {
-    const token = req.header("auth-token");
+    let form = new formidable.IncomingForm();
+    form.keepExtensions = true;
 
-    if (!token) {
-      return res.status(401).json({ error: "Authentication token not found" });
-    }
+    form.parse(req, async (err, fields, files) => {
+      const { token, name, description, address, latitude, longitude, seeking } = fields;
+      console.log("Seeking : ",seeking[0]?.split(','));
 
-    const decoded = jwt.verify(token, TOKEN_SECRET);
-    const userId = decoded._id;
-    const user = await User.findById(userId);
-    const { name, description, location, address, seeking } = req.body;
+      if (!token?.[0]) {
+        return res.status(401).json({ error: "Authentication token not found" });
+      }
+  
+      const decoded = jwt.verify(token?.[0], TOKEN_SECRET);
+      const userId = decoded._id;
+      const user = await User.findById(userId);
 
-    // Create a new chat room
-    const chatRoom = new Chat({
-      name,
-      createdBy: user,
-      description,
-      location: {
-        type: "Point",
-        coordinates: [location.longitude, location.latitude],
-      },
-      address,
-      seeking:seeking,
+      if (files?.image?.[0]) {
+
+        const room = new Chat({
+          name:name?.[0],
+          createdBy: user,
+          description:description?.[0],
+          location: {
+            type: "Point",
+            coordinates: [longitude?.[0], latitude?.[0]],
+          },
+          address:address?.[0],
+          seeking: seeking[0]?.split(','),
+        });
+
+
+        room.image.data = fs.readFileSync(files.image?.[0].filepath);
+        room.image.contentType = files.image?.[0].mimetype;
+        await room.save();
+        res.status(200).json({ msg: "OK" });
+      }
     });
-
-    // Save the chat room to the database
-    await chatRoom.save();
-    res.status(201).json(chatRoom);
   } catch (error) {
     res.status(500).json({ error: "Error creating chat room" });
   }
 });
 
+router.get("/photo/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const chat = await Chat.findById(id);
+    if (chat) {
+      res.set("Content-Type", chat.image.contentType);
+      res.send(chat.image.data);
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
 
 router.post("/fetchAllRooms", async (req, res) => {
   try {
     const { userId } = req.body;
 
-    const chatRooms = await Chat.find({ "participants": userId });
+    const chatRooms = await Chat.find({ participants: userId });
 
     res.status(200).json(chatRooms);
   } catch (error) {
@@ -97,13 +77,10 @@ router.post("/fetchAllRooms", async (req, res) => {
   }
 });
 
-
-// Route to fetch chat room data and messages by roomId
 router.get("/room/:roomId", async (req, res) => {
   try {
     const { roomId } = req.params;
 
-    // Find the chat room by its ID
     const chatRoom = await Chat.findById(roomId);
 
     if (!chatRoom) {
@@ -119,12 +96,10 @@ router.get("/room/:roomId", async (req, res) => {
   }
 });
 
-
 router.post("/addParticipant", async (req, res) => {
   try {
-    const { roomId, userId } = req.body; // Assuming you send user information in the request body
+    const { roomId, userId } = req.body;
 
-    // Check if the chat room with the specified ID exists
     const chatRoom = await Chat.findById(roomId);
     const user = await User.findById(userId);
 
@@ -132,24 +107,25 @@ router.post("/addParticipant", async (req, res) => {
       return res.status(404).json({ message: "Chat room not found" });
     }
 
-    let isParticipant=1;
+    let isParticipant = 1;
 
-    for(var i=0; i<chatRoom.participants.length; i++){
-      if((chatRoom.participants[i])===userId){
-        isParticipant=0;
+    for (var i = 0; i < chatRoom.participants.length; i++) {
+      if (chatRoom.participants[i] === userId) {
+        isParticipant = 0;
         break;
       }
     }
 
     if (isParticipant) {
-      chatRoom.participants.push(userId); // Set userId to the ObjectId
+      chatRoom.participants.push(userId);
 
-      // Save the updated chat room
       await chatRoom.save();
 
       return res.status(200).json({ message: "User added to the chat room" });
     } else {
-      return res.status(200).json({ message: "User is already a participant in the chat room" });
+      return res
+        .status(200)
+        .json({ message: "User is already a participant in the chat room" });
     }
   } catch (error) {
     console.error("Error adding participant:", error);
@@ -157,13 +133,11 @@ router.post("/addParticipant", async (req, res) => {
   }
 });
 
-
-router.post("/getChatRoomData", async (req,res)=>{
+router.post("/getChatRoomData", async (req, res) => {
   try {
     const { roomId } = req.body;
     let users = [];
 
-    
     const chatRoom = await Chat.findById(roomId);
     const adminId = chatRoom.createdBy._id;
     const admin = await User.findById(adminId);
@@ -172,23 +146,22 @@ router.post("/getChatRoomData", async (req,res)=>{
       return res.status(404).json({ message: "Chat room not found" });
     }
 
-    for(var i=0; i<chatRoom.participants.length; i++){
+    for (var i = 0; i < chatRoom.participants.length; i++) {
       let user = await User.findById(chatRoom.participants[i]);
       users.push(user);
     }
 
-    res.status(200).json({chatRoom, users, admin});
+    res.status(200).json({ chatRoom, users, admin });
   } catch (error) {
     console.error("Error fetching participants:", error);
     res.status(500).json({ message: "Internal server error" });
   }
-})
+});
 
-router.post("/setLiveLocation", async (req, res)=>{
-  try{
-    const {userId, userLocation} = req.body;
+router.post("/setLiveLocation", async (req, res) => {
+  try {
+    const { userId, userLocation } = req.body;
     const user = await User.findById(userId);
-
 
     user.location = {
       type: "Point",
@@ -196,13 +169,13 @@ router.post("/setLiveLocation", async (req, res)=>{
     };
     await user.save();
     res.status(200).json({ msg: "Location updated successfully" });
-  } catch{
-    res.status(500).json({msg:"Error updating location"});
+  } catch {
+    res.status(500).json({ msg: "Error updating location" });
   }
-})
+});
 
-router.post("/getNearbyEvents", async(req, res)=>{
-  const {userId, interest, radius} = req.body;
+router.post("/getNearbyEvents", async (req, res) => {
+  const { userId, interest, radius } = req.body;
   const interests = [];
   interests.push(interest);
 
@@ -214,33 +187,31 @@ router.post("/getNearbyEvents", async(req, res)=>{
         near: user.location,
         distanceField: "distance",
         spherical: true,
-        maxDistance: radius*1000,
+        maxDistance: radius * 1000,
       },
     },
     {
       $match: {
         seeking: {
-          $in: interests, 
+          $in: interests,
         },
       },
     },
   ]);
 
-  res.status(200).json({nearbyChatRooms});
-})
+  res.status(200).json({ nearbyChatRooms });
+});
 
+router.post("/getYourEvents", async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const user = await User.findById(userId);
 
-router.post("/getYourEvents", async(req,res)=>{
-  try{
-  const {userId} = req.body;
-  const user = await User.findById(userId);
-
-  const chatRooms = await Chat.find({createdBy:user._id});
-  res.status(200).json({chatRooms});
-  } catch{
-    res.status(500).json({msg:'Internal Server Error'});
+    const chatRooms = await Chat.find({ createdBy: user._id });
+    res.status(200).json({ chatRooms });
+  } catch {
+    res.status(500).json({ msg: "Internal Server Error" });
   }
-})
-
+});
 
 module.exports = router;

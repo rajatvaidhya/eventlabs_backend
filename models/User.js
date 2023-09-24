@@ -2,7 +2,8 @@ const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
   image:{
-    type:String
+    data:Buffer,
+    contentType:String
   },
   firstName: {
     type: String,
@@ -30,12 +31,12 @@ const userSchema = new mongoose.Schema({
   location: {
     type: {
       type: String,
-      enum: ['Point'], // GeoJSON point type
+      enum: ['Point'], 
       default: 'Point',
     },
     coordinates: {
-      type: [Number], // [longitude, latitude]
-      default: [0, 0], // Default location coordinates
+      type: [Number], 
+      default: [0, 0], 
     },
   },
   createdAt: {

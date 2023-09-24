@@ -28,11 +28,17 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "https://eventlabs.netlify.app",
+    origin: "https://eventlabs-frontend.vercel.app",
   },
 });
 
 io.on("connection", (socket) => {
+
+  socket.on("join-room",(roomId)=>{
+    socket.join(roomId)
+    console.log(`user id : ${socket.id} join room id : ${roomId}`)
+  })
+
   socket.on("message", async ({ roomId, newMessage, token }) => {
     const decoded = jwt.verify(token, TOKEN_SECRET);
     const userId = decoded._id;
@@ -68,7 +74,7 @@ io.on("connection", (socket) => {
             const lastMessage = chatRoom.messages[chatRoom.messages.length - 1];
             time = lastMessage.createdAt;
 
-            io.emit("sendMessage", {
+            io.to(roomId).emit("sendMessage", {
               sender,
               senderName,
               senderNumber,

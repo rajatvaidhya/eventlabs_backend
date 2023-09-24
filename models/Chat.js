@@ -2,8 +2,8 @@ const mongoose = require("mongoose");
 
 const messageSchema = new mongoose.Schema(
   {
-    image:{
-      type:String,
+    image: {
+      type: String,
     },
     senderName: {
       type: String,
@@ -34,32 +34,31 @@ const chatSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      // required: true,
       enum: ["public", "private"],
     },
     description: {
-      type:String,
-      required:true
+      type: String,
+      required: true,
     },
     image:{
-      type:String
+      data:Buffer,
+      contentType:String
     },
     address: {
-      type:String,
-      required:true
+      type: String,
+      required: true,
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      // required: true,
     },
     seeking: {
-      type: [String], 
-      default: [],   
+      type: [String],
+      default: [],
     },
     participants: [
       {
-        type: String
+        type: String,
       },
     ],
     location: {
@@ -72,7 +71,7 @@ const chatSchema = new mongoose.Schema(
         default: [0, 0],
       },
     },
-    messages: [messageSchema], 
+    messages: [messageSchema],
   },
   { timestamps: true }
 );

@@ -4,50 +4,11 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const TOKEN_SECRET = "enclave";
-const multer = require('multer');
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    // cb(null, "../public/images");
-    cb(null, './uploads/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now();
-    cb(null, uniqueSuffix + file.originalname);
-  },
-});
-
-const upload = multer({ storage: storage });
-
-
-//Upload user profile picture
-router.post("/uploadUserImage", upload.single("image"), async (req, res) => {
-  try {
-    const userId = req.body.userId; 
-    const imageFile = req.file; 
-
-    if (!userId || !imageFile) {
-      return res.status(400).json({ error: "Invalid request" });
-    }
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    user.image = imageFile.filename;
-
-    await user.save();
-
-    res.status(200).json({ msg: "Successfully uploaded user image!" });
-  } catch (error) {
-    console.error("Error uploading user image:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
+const formidable = require('formidable')
+const fs = require("fs")
 
 router.post("/signup", async (req, res) => {
+try{
   const {
     firstName,
     lastName,
@@ -58,7 +19,7 @@ router.post("/signup", async (req, res) => {
     location,
   } = req.body;
 
-  try {
+ 
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: "Email already exists" });
@@ -112,20 +73,40 @@ router.post("/login", async (req, res) => {
 });
 
 router.post("/interest-selection", async (req, res) => {
-  const token = req.header("auth-token");
-  const interests = req.body.interests;
+  try {
+    let form = new formidable.IncomingForm();
+    form.keepExtensions = true
+    
+    form.parse(req, async(err,fields,files)=>{
+      const {
+        interests,userId
+      } = fields;
+      const user = await User.findById(userId?.[0]);
 
-  if (!token) {
-    return res.status(401).json({ error: "Authentication token not found" });
+      user.interests = interests[0]?.split(',');
+
+      if(files?.image?.[0]){
+        user.image.data = fs.readFileSync(files.image?.[0].filepath)
+        user.image.contentType= files.image?.[0].mimetype
+      }
+
+      await user.save();
+      res.status(200).json({ msg: "OK" });
+    })
+  }catch(err){
+    console.log(err)
   }
-
-  const decoded = jwt.verify(token, TOKEN_SECRET);
-  const userId = decoded._id;
-  const user = await User.findById(userId);
-
-  user.interests = interests;
-  await user.save();
-  res.status(200).json({ msg: "OK" });
 });
+
+router.get("/photo/:id",async(req,res)=>{
+  try{const id = req.params.id
+  const user = await User.findById(id)
+  if(user){
+    res.set("Content-Type",user.image.contentType)
+    res.send(user.image.data)
+  }}catch(err){
+    console.log(err)
+  }
+})
 
 module.exports = router;
