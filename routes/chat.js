@@ -43,7 +43,7 @@ router.post("/create", async (req, res) => {
         room.image.data = fs.readFileSync(files.image?.[0].filepath);
         room.image.contentType = files.image?.[0].mimetype;
         await room.save();
-        res.status(200).json({ msg: "OK" });
+        res.status(200).json({ roomId:room._id, msg: "OK" });
       }
     });
   } catch (error) {
