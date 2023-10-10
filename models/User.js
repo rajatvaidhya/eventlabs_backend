@@ -28,10 +28,16 @@ const userSchema = new mongoose.Schema({
     required: true,
   },
   interests: [{ type: String }], 
+  notifications: [
+    {
+      id: { type: mongoose.Schema.Types.ObjectId, ref: 'Chat' },
+      eventName: { type: String },
+      eventAddress: {type: String}
+    }
+  ],
   location: {
     type: {
       type: String,
-      enum: ['Point'], 
       default: 'Point',
     },
     coordinates: {

@@ -23,6 +23,7 @@ app.use("/uploads", express.static("uploads"));
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/chat", require("./routes/chat"));
 app.use("/api/messages", require("./routes/messages"));
+app.use("/api/user", require("./routes/user"));
 
 const server = http.createServer(app);
 
@@ -92,6 +93,45 @@ io.on("connection", (socket) => {
         console.error("Error finding chat room:", error);
       });
   });
+
+  socket.on("notify", async ({ location, eventName, address, radius, selectedInterests, eventId }) => {
+    try {
+      const eventLocation =  {
+        type: "Point",
+        coordinates: [Number(location.longitude), Number(location.latitude)],
+      }
+
+      const nearbyUsers = await User.aggregate([
+        {
+          $geoNear: {
+            near: eventLocation,
+            distanceField: "distance",
+            spherical: true,
+            maxDistance: Number(radius) * 1000,
+          },
+        },
+        {
+          $match: {
+            interests: {
+              $in: selectedInterests,
+            },
+          },
+        },
+      ]);
+
+      for (var i = 0; i < nearbyUsers.length; i++) {
+        const notificationObject = { id: eventId, eventName: eventName, eventAddress: address };
+      
+        await User.updateOne(
+          { _id: nearbyUsers[i]._id },
+          { $push: { notifications: notificationObject } }
+        );
+      }
+
+    } catch (error) {
+      console.error("Error in aggregation:", error);
+    }
+  });  
 });
 
 server.listen(PORT, () => {

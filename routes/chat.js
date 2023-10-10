@@ -187,7 +187,7 @@ router.post("/getNearbyEvents", async (req, res) => {
         near: user.location,
         distanceField: "distance",
         spherical: true,
-        maxDistance: radius * 1000,
+        maxDistance: radius*1000,
       },
     },
     {
@@ -213,5 +213,27 @@ router.post("/getYourEvents", async (req, res) => {
     res.status(500).json({ msg: "Internal Server Error" });
   }
 });
+
+router.delete("/deleteEvent", async (req, res) => {
+  try {
+    const { roomId } = req.body;
+    const response = await Chat.findOneAndDelete({ _id: roomId });
+
+    const users = await User.find({ "notifications.id": roomId });
+
+    for (const user of users) {
+      user.notifications = user.notifications.filter(
+        (notification) => notification.id.toString() !== roomId
+      );
+      await user.save();
+    }
+
+    return res.status(200).json({ message: "Chat room and notifications deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting chat room:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 
 module.exports = router;
