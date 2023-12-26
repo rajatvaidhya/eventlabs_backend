@@ -3,6 +3,7 @@ const router = express.Router();
 const Chat = require("../models/Chat");
 const TOKEN_SECRET = "enclave";
 const User = require("../models/User");
+const Post = require("../models/Post");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const formidable = require("formidable");
@@ -14,36 +15,44 @@ router.post("/create", async (req, res) => {
     form.keepExtensions = true;
 
     form.parse(req, async (err, fields, files) => {
-      const { token, name, description, address, latitude, longitude, seeking } = fields;
-      console.log("Seeking : ",seeking[0]?.split(','));
+      const {
+        token,
+        name,
+        description,
+        address,
+        latitude,
+        longitude,
+        seeking,
+      } = fields;
+      console.log("Seeking : ", seeking[0]?.split(","));
 
       if (!token?.[0]) {
-        return res.status(401).json({ error: "Authentication token not found" });
+        return res
+          .status(401)
+          .json({ error: "Authentication token not found" });
       }
-  
+
       const decoded = jwt.verify(token?.[0], TOKEN_SECRET);
       const userId = decoded._id;
       const user = await User.findById(userId);
 
       if (files?.image?.[0]) {
-
         const room = new Chat({
-          name:name?.[0],
+          name: name?.[0],
           createdBy: user,
-          description:description?.[0],
+          description: description?.[0],
           location: {
             type: "Point",
             coordinates: [longitude?.[0], latitude?.[0]],
           },
-          address:address?.[0],
-          seeking: seeking[0]?.split(','),
+          address: address?.[0],
+          seeking: seeking[0]?.split(","),
         });
-
 
         room.image.data = fs.readFileSync(files.image?.[0].filepath);
         room.image.contentType = files.image?.[0].mimetype;
         await room.save();
-        res.status(200).json({ roomId:room._id, msg: "OK" });
+        res.status(200).json({ roomId: room._id, msg: "OK" });
       }
     });
   } catch (error) {
@@ -187,7 +196,7 @@ router.post("/getNearbyEvents", async (req, res) => {
         near: user.location,
         distanceField: "distance",
         spherical: true,
-        maxDistance: radius*1000,
+        maxDistance: radius * 1000,
       },
     },
     {
@@ -228,12 +237,39 @@ router.delete("/deleteEvent", async (req, res) => {
       await user.save();
     }
 
-    return res.status(200).json({ message: "Chat room and notifications deleted successfully" });
+    return res
+      .status(200)
+      .json({ message: "Chat room and notifications deleted successfully" });
   } catch (error) {
     console.error("Error deleting chat room:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
 
+router.post("/addPost", async (req, res) => {
+  try {
+    let form = new formidable.IncomingForm();
+    form.keepExtensions = true;
+
+    form.parse(req, async (err, fields, files) => {
+      const { caption, eventId } = fields;
+
+      const post = await Post.create({
+        uploadedBy: eventId[0],
+        caption: caption[0],
+      });
+
+      if (files?.image?.[0]) {
+        post.image.data = fs.readFileSync(files.image?.[0].filepath);
+        post.image.contentType = files.image?.[0].mimetype;
+      }
+
+      await post.save();
+      res.status(200).json({ msg: "OK" });
+    });
+  } catch (err) {
+    console.log(err);
+  }
+});
 
 module.exports = router;

@@ -16,12 +16,13 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static("uploads"));
 
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/chat", require("./routes/chat"));
+app.use("/api/requirements", require("./routes/requirements"));
 app.use("/api/messages", require("./routes/messages"));
 app.use("/api/user", require("./routes/user"));
 
@@ -34,11 +35,10 @@ const io = new Server(server, {
 });
 
 io.on("connection", (socket) => {
-
-  socket.on("join-room",(roomId)=>{
-    socket.join(roomId)
-    console.log(`user id : ${socket.id} join room id : ${roomId}`)
-  })
+  socket.on("join-room", (roomId) => {
+    socket.join(roomId);
+    console.log(`user id : ${socket.id} join room id : ${roomId}`);
+  });
 
   socket.on("message", async ({ roomId, newMessage, token }) => {
     const decoded = jwt.verify(token, TOKEN_SECRET);
@@ -80,10 +80,9 @@ io.on("connection", (socket) => {
               senderName,
               senderNumber,
               content,
-              createdAt:time,
-              image
+              createdAt: time,
+              image,
             });
-
           })
           .catch((error) => {
             console.error("Error saving chat room:", error);
@@ -94,44 +93,61 @@ io.on("connection", (socket) => {
       });
   });
 
-  socket.on("notify", async ({ location, eventName, address, radius, selectedInterests, eventId }) => {
-    try {
-      const eventLocation =  {
-        type: "Point",
-        coordinates: [Number(location.longitude), Number(location.latitude)],
-      }
+  socket.on(
+    "notify",
+    async ({
+      location,
+      title,
+      eventName,
+      radius,
+      selectedInterests,
+      eventId,
+      reqId,
+    }) => {
+      console.log("title : ", title);
 
-      const nearbyUsers = await User.aggregate([
-        {
-          $geoNear: {
-            near: eventLocation,
-            distanceField: "distance",
-            spherical: true,
-            maxDistance: Number(radius) * 1000,
-          },
-        },
-        {
-          $match: {
-            interests: {
-              $in: selectedInterests,
+      try {
+        const eventLocation = {
+          type: "Point",
+          coordinates: [Number(location.longitude), Number(location.latitude)],
+        };
+
+        const nearbyUsers = await User.aggregate([
+          {
+            $geoNear: {
+              near: eventLocation,
+              distanceField: "distance",
+              spherical: true,
+              maxDistance: Number(radius) * 1000,
             },
           },
-        },
-      ]);
+          {
+            $match: {
+              interests: {
+                $in: selectedInterests,
+              },
+            },
+          },
+        ]);
 
-      for (var i = 0; i < nearbyUsers.length; i++) {
-        const notificationObject = { id: eventId, eventName: eventName, eventAddress: address };
-      
-        await User.updateOne(
-          { _id: nearbyUsers[i]._id },
-          { $push: { notifications: notificationObject } }
-        );
+        for (var i = 0; i < nearbyUsers.length; i++) {
+          const notificationObject = {
+            id: eventId,
+            title: title,
+            eventName: eventName,
+            reqId: reqId,
+          };
+
+          await User.updateOne(
+            { _id: nearbyUsers[i]._id },
+            { $push: { notifications: notificationObject } }
+          );
+        }
+      } catch (error) {
+        console.error("Error in aggregation:", error);
       }
-
-    } catch (error) {
-      console.error("Error in aggregation:", error);
     }
-  });  
+  );
 });
 
 server.listen(PORT, () => {

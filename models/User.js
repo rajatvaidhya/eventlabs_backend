@@ -1,9 +1,9 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
-  image:{
-    data:Buffer,
-    contentType:String
+  image: {
+    data: Buffer,
+    contentType: String,
   },
   firstName: {
     type: String,
@@ -27,22 +27,23 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  interests: [{ type: String }], 
+  interests: [{ type: String }],
   notifications: [
     {
-      id: { type: mongoose.Schema.Types.ObjectId, ref: 'Chat' },
+      id: { type: mongoose.Schema.Types.ObjectId, ref: "Chat" },
       eventName: { type: String },
-      eventAddress: {type: String}
-    }
+      title: { type: String },
+      reqId: { type: mongoose.Schema.Types.ObjectId, ref: "Requirement" },
+    },
   ],
   location: {
     type: {
       type: String,
-      default: 'Point',
+      default: "Point",
     },
     coordinates: {
-      type: [Number], 
-      default: [0, 0], 
+      type: [Number],
+      default: [0, 0],
     },
   },
   createdAt: {
@@ -52,8 +53,8 @@ const userSchema = new mongoose.Schema({
 });
 
 // Index for geospatial queries (if using geolocation)
-userSchema.index({ location: '2dsphere' });
+userSchema.index({ location: "2dsphere" });
 
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model("User", userSchema);
 
 module.exports = User;
