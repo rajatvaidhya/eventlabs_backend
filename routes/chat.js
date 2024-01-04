@@ -23,6 +23,7 @@ router.post("/create", async (req, res) => {
         latitude,
         longitude,
         seeking,
+        date,
       } = fields;
       console.log("Seeking : ", seeking[0]?.split(","));
 
@@ -47,6 +48,7 @@ router.post("/create", async (req, res) => {
           },
           address: address?.[0],
           seeking: seeking[0]?.split(","),
+          scheduledDate: date?.[0],
         });
 
         room.image.data = fs.readFileSync(files.image?.[0].filepath);
@@ -184,7 +186,7 @@ router.post("/setLiveLocation", async (req, res) => {
 });
 
 router.post("/getNearbyEvents", async (req, res) => {
-  const { userId, interest, radius } = req.body;
+  const { userId, interest } = req.body;
   const interests = [];
   interests.push(interest);
 
@@ -196,7 +198,7 @@ router.post("/getNearbyEvents", async (req, res) => {
         near: user.location,
         distanceField: "distance",
         spherical: true,
-        maxDistance: radius * 1000,
+        maxDistance: 100 * 1000,
       },
     },
     {
@@ -267,6 +269,28 @@ router.post("/addPost", async (req, res) => {
       await post.save();
       res.status(200).json({ msg: "OK" });
     });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+
+router.post("/addRating", async (req, res) => {
+  try {
+    const {eventId, ratings} = req.body;
+    const business = await Chat.findById(eventId);
+
+    business.ratings.push(ratings);
+
+    const totalRatings = business.ratings.length;
+    const sumRatings = business.ratings.reduce((total, r) => total + r, 0);
+    const averageRating = Math.ceil(sumRatings / totalRatings);
+
+    business.averageRating = averageRating;
+
+    await business.save();
+
+    res.json({ success: true, averageRating });
   } catch (err) {
     console.log(err);
   }

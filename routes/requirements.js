@@ -4,23 +4,35 @@ const Requirement = require("../models/Requirement");
 const User = require("../models/User");
 
 router.post("/createRequirement", async (req, res) => {
-  const { eventId, title, radius, selectedInterests, numberOfPosts, location } =
-    req.body;
+  try {
+    const {
+      eventId,
+      serviceName,
+      radioValue,
+      startDay,
+      endDay,
+      startTiming,
+      endTiming,
+      price,
+    } = req.body;
 
-  const requirement = await Requirement.create({
-    eventId: eventId,
-    requirementTitle: title,
-    requirementNumber: numberOfPosts,
-    requirementDistance: radius,
-    seeking: selectedInterests,
-    location: {
-      type: "Point",
-      coordinates: [location.longitude, location.latitude],
-    },
-  });
+    const requirement = await Requirement.create({
+      eventId: eventId,
+      requirementTitle: serviceName,
+      freeCancellation: radioValue,
+      startDay,
+      endDay,
+      startTiming,
+      endTiming,
+      price,
+    });
 
-  await requirement.save();
-  res.send({ msg: "Requirement added successfully", reqId: requirement._id });
+    await requirement.save();
+  } catch (error) {
+    console.error("Error in aggregation:", error);
+  }
+
+  res.send({ msg: "Requirement added successfully" });
 });
 
 router.get("/fetchRequirements/:eventId", async (req, res) => {
@@ -67,7 +79,6 @@ router.get("/fetchRequirementUsers/:requirementId", async (req, res) => {
     const user = await User.findById(requirement.appliedBy[i]);
     users.push(user);
   }
-
 
   res.send(users);
 });

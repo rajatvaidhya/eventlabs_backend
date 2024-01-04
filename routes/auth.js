@@ -87,10 +87,11 @@ router.post("/interest-selection", async (req, res) => {
     form.keepExtensions = true;
 
     form.parse(req, async (err, fields, files) => {
-      const { interests, userId } = fields;
+      const { interests, userId, description } = fields;
       const user = await User.findById(userId?.[0]);
 
       user.interests = interests[0]?.split(",");
+      user.description = description?.[0];
 
       if (files?.image?.[0]) {
         user.image.data = fs.readFileSync(files.image?.[0].filepath);

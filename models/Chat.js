@@ -40,9 +40,9 @@ const chatSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    image:{
-      data:Buffer,
-      contentType:String
+    image: {
+      data: Buffer,
+      contentType: String,
     },
     address: {
       type: String,
@@ -56,6 +56,8 @@ const chatSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    ratings: [{ type: Number }],
+    averageRating: { type: Number },
     participants: [
       {
         type: String,
@@ -71,6 +73,10 @@ const chatSchema = new mongoose.Schema(
         default: [0, 0],
       },
     },
+    scheduledDate: {
+      type: String,
+    },
+
     messages: [messageSchema],
   },
   { timestamps: true }

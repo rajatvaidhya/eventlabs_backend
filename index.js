@@ -31,6 +31,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: "https://eventlabs-frontend.vercel.app",
+    // origin : "http://localhost:3000",
   },
 });
 
@@ -92,62 +93,6 @@ io.on("connection", (socket) => {
         console.error("Error finding chat room:", error);
       });
   });
-
-  socket.on(
-    "notify",
-    async ({
-      location,
-      title,
-      eventName,
-      radius,
-      selectedInterests,
-      eventId,
-      reqId,
-    }) => {
-      console.log("title : ", title);
-
-      try {
-        const eventLocation = {
-          type: "Point",
-          coordinates: [Number(location.longitude), Number(location.latitude)],
-        };
-
-        const nearbyUsers = await User.aggregate([
-          {
-            $geoNear: {
-              near: eventLocation,
-              distanceField: "distance",
-              spherical: true,
-              maxDistance: Number(radius) * 1000,
-            },
-          },
-          {
-            $match: {
-              interests: {
-                $in: selectedInterests,
-              },
-            },
-          },
-        ]);
-
-        for (var i = 0; i < nearbyUsers.length; i++) {
-          const notificationObject = {
-            id: eventId,
-            title: title,
-            eventName: eventName,
-            reqId: reqId,
-          };
-
-          await User.updateOne(
-            { _id: nearbyUsers[i]._id },
-            { $push: { notifications: notificationObject } }
-          );
-        }
-      } catch (error) {
-        console.error("Error in aggregation:", error);
-      }
-    }
-  );
 });
 
 server.listen(PORT, () => {
