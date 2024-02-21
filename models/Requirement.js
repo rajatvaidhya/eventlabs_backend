@@ -3,11 +3,10 @@ const mongoose = require("mongoose");
 const RequirementSchema = new mongoose.Schema({
   eventId: { type: mongoose.Schema.Types.ObjectId, ref: "Chat" },
   requirementTitle: String,
+  requirementDescription: String,
   freeCancellation : Boolean,
   startDay: String,
   endDay: String, 
-  startTiming : String,
-  endTiming : String,
   price : Number,
 });
 

@@ -11,9 +11,8 @@ router.post("/createRequirement", async (req, res) => {
       radioValue,
       startDay,
       endDay,
-      startTiming,
-      endTiming,
       price,
+      serviceDescription
     } = req.body;
 
     const requirement = await Requirement.create({
@@ -22,14 +21,13 @@ router.post("/createRequirement", async (req, res) => {
       freeCancellation: radioValue,
       startDay,
       endDay,
-      startTiming,
-      endTiming,
       price,
+      requirementDescription:serviceDescription
     });
 
     await requirement.save();
   } catch (error) {
-    console.error("Error in aggregation:", error);
+    console.error("Error in creating service : ", error);
   }
 
   res.send({ msg: "Requirement added successfully" });
