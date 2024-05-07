@@ -5,7 +5,49 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const TOKEN_SECRET = "enclave";
 const formidable = require("formidable");
+const nodemailer = require("nodemailer");
 const fs = require("fs");
+let BackendOTP = "";
+
+router.post("/send-otp", async (req, res) => {
+  BackendOTP = Math.floor(100000 + Math.random() * 900000).toString();
+
+  const userExistsWithEmail = await User.findOne({ email: req.body.email });
+
+  if (userExistsWithEmail) {
+    return res.json({ message: "Email already exists" });
+  }
+
+  const userExistsWithPhone = await User.findOne({ phoneNumber: req.body.phoneNumber });
+
+  if (userExistsWithPhone) {
+    return res.json({ message: "Phone number already exists" });
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    auth: {
+      user: "rajatvaidhya@gmail.com",
+      pass: "oelx dgsr sxyj dxaw",
+    },
+  });
+
+  async function main() {
+    const info = await transporter.sendMail({
+      from: '"Eventlabs" <eventlabs@gmail.com>',
+      to: `${req.body.email}`,
+      subject: "Your Eventlabs Verification Code",
+      text: `Your OTP is ${BackendOTP}`,
+    });
+
+    res.json({success:true});
+  }
+
+  main().catch(console.error);
+});
 
 router.post("/signup", async (req, res) => {
   try {
@@ -17,11 +59,14 @@ router.post("/signup", async (req, res) => {
       password,
       interests,
       location,
+      FrontendOTP
     } = req.body;
 
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ message: "Email already exists" });
+    const frontendOTPString = FrontendOTP.join('');
+
+    if (!FrontendOTP || FrontendOTP.length !== 6 || Number(frontendOTPString) != BackendOTP) {
+      res.json({message:'Enter valid OTP'})
+      return;
     }
 
     const salt = await bcrypt.genSalt(10);
