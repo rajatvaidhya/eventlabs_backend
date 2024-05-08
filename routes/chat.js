@@ -296,4 +296,21 @@ router.post("/addRating", async (req, res) => {
   }
 });
 
+router.post("/updateEventLocation", async(req,res)=>{
+  const event = await Chat.findById(req.body.eventId);
+
+  if(!event){
+    res.status(404).json({success:false, message:'Event not found'});
+    return;
+  }
+
+  event.location = {
+    type: "Point",
+    coordinates: [req.body.longitude, req.body.latitude],
+  };
+
+  await event.save();
+  res.status(200).json({ success:true, msg: "Location updated successfully" });
+})
+
 module.exports = router;
