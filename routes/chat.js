@@ -208,6 +208,11 @@ router.post("/getNearbyEvents", async (req, res) => {
         },
       },
     },
+    {
+      $match: {
+        status: "Available",
+      },
+    },
   ]);
 
   res.status(200).json({ nearbyChatRooms });
@@ -314,5 +319,24 @@ router.post("/updateEventLocation", async(req,res)=>{
   await event.save();
   res.status(200).json({ success:true, msg: "Location updated successfully" });
 })
+
+
+router.put('/updateChatRoomData', async (req, res) => {
+  const { roomId, roomName, roomDescription, roomAddress, status } = req.body;
+
+  const chatRoomToUpdate = await Chat.findById(roomId);
+
+  if (!chatRoomToUpdate) {
+    return res.status(404).json({ error: 'Chat room not found' });
+  }
+
+  chatRoomToUpdate.name = roomName;
+  chatRoomToUpdate.description = roomDescription;
+  chatRoomToUpdate.address = roomAddress;
+  chatRoomToUpdate.status = status;
+  await chatRoomToUpdate.save();
+
+  return res.status(200).json({ message: 'Chat room updated successfully', chatRoom: chatRoomToUpdate });
+});
 
 module.exports = router;

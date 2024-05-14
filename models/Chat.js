@@ -40,6 +40,10 @@ const chatSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    status:{
+      type:String,
+      default:"Available"
+    },
     image: {
       data: Buffer,
       contentType: String,
