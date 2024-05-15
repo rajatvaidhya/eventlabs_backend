@@ -235,21 +235,21 @@ router.delete("/deleteEvent", async (req, res) => {
     const { roomId } = req.body;
     const response = await Chat.findOneAndDelete({ _id: roomId });
 
-    const users = await User.find({ "notifications.id": roomId });
+    // const users = await User.find({ "notifications.id": roomId });
 
-    for (const user of users) {
-      user.notifications = user.notifications.filter(
-        (notification) => notification.id.toString() !== roomId
-      );
-      await user.save();
-    }
+    // for (const user of users) {
+    //   user.notifications = user.notifications.filter(
+    //     (notification) => notification.id.toString() !== roomId
+    //   );
+    //   await user.save();
+    // }
 
     return res
       .status(200)
-      .json({ message: "Chat room and notifications deleted successfully" });
+      .json({ message: "Chat room and notifications deleted successfully", success:true });
   } catch (error) {
     console.error("Error deleting chat room:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Internal server error", success:false });
   }
 });
 
