@@ -327,7 +327,7 @@ router.put('/updateChatRoomData', async (req, res) => {
   const chatRoomToUpdate = await Chat.findById(roomId);
 
   if (!chatRoomToUpdate) {
-    return res.status(404).json({ error: 'Chat room not found' });
+    return res.status(404).json({ error: 'Event/Business not found' });
   }
 
   chatRoomToUpdate.name = roomName;
