@@ -3,10 +3,11 @@ const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
-const TOKEN_SECRET = "enclave";
 const formidable = require("formidable");
 const nodemailer = require("nodemailer");
 const fs = require("fs");
+require('dotenv').config();
+const TOKEN_SECRET = process.env.JWT_SEC;
 let BackendOTP = "";
 
 router.post("/send-otp", async (req, res) => {
@@ -31,7 +32,7 @@ router.post("/send-otp", async (req, res) => {
     secure: false,
     auth: {
       user: "rajatvaidhya@gmail.com",
-      pass: "oelx dgsr sxyj dxaw",
+      pass: process.env.GOOGLEPASS,
     },
   });
 

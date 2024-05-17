@@ -1,8 +1,9 @@
 const mongoose = require('mongoose');
+require('dotenv').config();
 
 function connectToMongo() {
   try {
-    mongoose.connect("mongodb+srv://vrinxsystem:rajat-123@cluster0.zkbwolf.mongodb.net/eventlabs", {
+    mongoose.connect(process.env.MONGOURI, {
       useNewUrlParser: true,
       useUnifiedTopology: true
     });

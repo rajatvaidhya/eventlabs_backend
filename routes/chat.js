@@ -1,12 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const Chat = require("../models/Chat");
-const TOKEN_SECRET = "enclave";
 const User = require("../models/User");
 const Post = require("../models/Post");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const formidable = require("formidable");
+require('dotenv').config();
+const TOKEN_SECRET = process.env.JWT_SEC;
 const fs = require("fs");
 
 router.post("/create", async (req, res) => {

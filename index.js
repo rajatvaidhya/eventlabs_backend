@@ -6,7 +6,8 @@ const Chat = require("./models/Chat");
 const User = require("./models/User");
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
-const TOKEN_SECRET = "enclave";
+require('dotenv').config();
+const TOKEN_SECRET = process.env.JWT_SEC;
 
 const PORT = process.env.PORT || 5000;
 
@@ -14,7 +15,14 @@ connectToMongo();
 
 const app = express();
 
-app.use(cors());
+app.use(cors(
+  {
+    origin:["https://eventlabs-frontend.vercel.app"],
+    methods:["POST","GET","PUT","DELETE"],
+    credentials:true
+  }
+));
+
 app.use(express.json());
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
