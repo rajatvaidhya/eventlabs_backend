@@ -219,14 +219,18 @@ router.post("/getNearbyEvents", async (req, res) => {
   res.status(200).json({ nearbyChatRooms });
 });
 
-router.post("/getYourEvents", async (req, res) => {
+router.get("/getYourEvents", async (req, res) => {
   try {
-    const { userId } = req.body;
+    const { userId } = req.query;
     const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
 
     const chatRooms = await Chat.find({ createdBy: user._id });
     res.status(200).json({ chatRooms });
-  } catch {
+  } catch (error) {
     res.status(500).json({ msg: "Internal Server Error" });
   }
 });
