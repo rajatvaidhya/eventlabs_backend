@@ -6,7 +6,7 @@ const Post = require("../models/Post");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const formidable = require("formidable");
-require('dotenv').config();
+require("dotenv").config();
 const TOKEN_SECRET = process.env.JWT_SEC;
 const fs = require("fs");
 
@@ -219,6 +219,40 @@ router.post("/getNearbyEvents", async (req, res) => {
   res.status(200).json({ nearbyChatRooms });
 });
 
+router.post("/getCityEvents", async (req, res) => {
+  const { latitude, longitude, interest } = req.body;
+  const interests = [];
+  interests.push(interest);
+
+  const nearbyChatRooms = await Chat.aggregate([
+    {
+      $geoNear: {
+        near: {
+          type: "Point",
+          coordinates: [parseFloat(longitude), parseFloat(latitude)],
+        },
+        distanceField: "distance",
+        spherical: true,
+        maxDistance: 100 * 1000,
+      },
+    },
+    {
+      $match: {
+        seeking: {
+          $in: interests,
+        },
+      },
+    },
+    {
+      $match: {
+        status: "Available",
+      },
+    },
+  ]);
+
+  res.status(200).json({ nearbyChatRooms });
+});
+
 router.get("/getYourEvents", async (req, res) => {
   try {
     const { userId } = req.query;
@@ -240,21 +274,17 @@ router.delete("/deleteEvent", async (req, res) => {
     const { roomId } = req.body;
     const response = await Chat.findOneAndDelete({ _id: roomId });
 
-    // const users = await User.find({ "notifications.id": roomId });
-
-    // for (const user of users) {
-    //   user.notifications = user.notifications.filter(
-    //     (notification) => notification.id.toString() !== roomId
-    //   );
-    //   await user.save();
-    // }
-
     return res
       .status(200)
-      .json({ message: "Chat room and notifications deleted successfully", success:true });
+      .json({
+        message: "Chat room and notifications deleted successfully",
+        success: true,
+      });
   } catch (error) {
     console.error("Error deleting chat room:", error);
-    return res.status(500).json({ message: "Internal server error", success:false });
+    return res
+      .status(500)
+      .json({ message: "Internal server error", success: false });
   }
 });
 
@@ -284,10 +314,9 @@ router.post("/addPost", async (req, res) => {
   }
 });
 
-
 router.post("/addRating", async (req, res) => {
   try {
-    const {eventId, ratings} = req.body;
+    const { eventId, ratings } = req.body;
     const business = await Chat.findById(eventId);
 
     business.ratings.push(ratings);
@@ -306,13 +335,12 @@ router.post("/addRating", async (req, res) => {
   }
 });
 
-router.post("/updateEventLocation", async(req,res)=>{
-
-  const {eventId, latitude, longitude} = req.body;
+router.post("/updateEventLocation", async (req, res) => {
+  const { eventId, latitude, longitude } = req.body;
   const event = await Chat.findById(eventId);
 
-  if(!event){
-    res.status(404).json({success:false, message:'Event not found'});
+  if (!event) {
+    res.status(404).json({ success: false, message: "Event not found" });
     return;
   }
 
@@ -322,17 +350,16 @@ router.post("/updateEventLocation", async(req,res)=>{
   };
 
   await event.save();
-  res.status(200).json({ success:true, msg: "Location updated successfully" });
-})
+  res.status(200).json({ success: true, msg: "Location updated successfully" });
+});
 
-
-router.put('/updateChatRoomData', async (req, res) => {
+router.put("/updateChatRoomData", async (req, res) => {
   const { roomId, roomName, roomDescription, roomAddress, status } = req.body;
 
   const chatRoomToUpdate = await Chat.findById(roomId);
 
   if (!chatRoomToUpdate) {
-    return res.status(404).json({ error: 'Event/Business not found' });
+    return res.status(404).json({ error: "Event/Business not found" });
   }
 
   chatRoomToUpdate.name = roomName;
@@ -341,7 +368,12 @@ router.put('/updateChatRoomData', async (req, res) => {
   chatRoomToUpdate.status = status;
   await chatRoomToUpdate.save();
 
-  return res.status(200).json({ message: 'Chat room updated successfully', chatRoom: chatRoomToUpdate });
+  return res
+    .status(200)
+    .json({
+      message: "Chat room updated successfully",
+      chatRoom: chatRoomToUpdate,
+    });
 });
 
 module.exports = router;
